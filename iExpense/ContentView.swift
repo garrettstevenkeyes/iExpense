@@ -8,14 +8,12 @@
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage("tapCount") private var tapCount = 0
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        Button("tap count: \(tapCount)"){
+            tapCount += 1
         }
-        .padding()
     }
 }
 
