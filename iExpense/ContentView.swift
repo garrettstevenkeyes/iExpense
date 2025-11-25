@@ -4,15 +4,86 @@
 //
 //  Created by Garrett Keyes on 11/20/25.
 //
-
+import Observation
 import SwiftUI
 
+struct ExpenseItem: Identifiable, Codable {
+    var id = UUID()
+    let name: String
+    let type: String
+    let amount: Double
+}
+
+@Observable
+class Expenses {
+    var items = [ExpenseItem]() {
+        didSet {
+            if let encoded = try? JSONEncoder().encode(items) {
+                UserDefaults.standard.set(encoded, forKey: "Items")
+            }
+        }
+    }
+    
+    init(){
+        if let savedItems = UserDefaults.standard.data(forKey: "Items"){
+            if let decodedItems = try? JSONDecoder().decode([ExpenseItem].self, from: savedItems){
+                items = decodedItems
+                return
+            }
+        }
+        
+        items = []
+    }
+}
+
 struct ContentView: View {
-    @AppStorage("tapCount") private var tapCount = 0
+    @State private var expenses = Expenses()
+    @State private var showingAddExpense: Bool = false
     
     var body: some View {
-        Button("tap count: \(tapCount)"){
-            tapCount += 1
+        NavigationStack {
+            List {
+                ForEach(expenses.items) { item in
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(item.name)
+                            .font(.headline)
+                            
+                            Text(item.type)
+                        }
+                        
+                        Spacer()
+                        
+                        Text(item.amount, format: .currency(code: Locale.current.currency?.identifier ?? "USD"))
+                    }
+                    .background(backgroundColor(for: item))
+                }
+                .onDelete(perform: removeItems)
+            }
+            .navigationTitle("iExpense")
+            .toolbar {
+                Button("Add Expense", systemImage: "plus"){
+                    showingAddExpense = true
+                }
+            }
+            .sheet(isPresented: $showingAddExpense){
+                AddView(expenses: expenses)
+            }
+        }
+        
+    }
+    
+    func removeItems(at offset: IndexSet){
+        expenses.items.remove(atOffsets: offset)
+    }
+    
+    func backgroundColor(for expense: ExpenseItem) -> Color {
+        if expense.amount <= 10 {
+            return .green
+        } else if expense.amount > 10 && expense.amount < 50 {
+            return .yellow
+        } else {
+            return .red
         }
     }
 }
